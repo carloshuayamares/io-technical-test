@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { CardService } from '../services/CardService';
 import { validateCardIssueRequest } from '../validators/CardValidator';
 import { createLogger } from '../../../shared/logger';
+import { HttpError } from '../errors/HttpError';
 
 const logger = createLogger('CardController');
 const router = Router();
@@ -51,6 +52,16 @@ router.post('/issue', async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Error in card issue endpoint', error);
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          message: error.message,
+          code: error.code || 'ERROR'
+        }
+      });
+    }
+
     return res.status(500).json({
       success: false,
       error: {
