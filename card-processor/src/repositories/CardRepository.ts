@@ -59,4 +59,21 @@ export class CardRepository {
       });
     });
   }
+
+  async findByDocument(documentNumber: string): Promise<CardRecord | null> {
+    const db = getDatabase();
+
+    return new Promise((resolve, reject) => {
+      const query = 'SELECT * FROM issued_cards WHERE documentNumber = ? LIMIT 1';
+
+      db.get(query, [documentNumber], (err, row) => {
+        if (err) {
+          logger.error('Error fetching card by document', err);
+          reject(err);
+        } else {
+          resolve(row || null);
+        }
+      });
+    });
+  }
 }

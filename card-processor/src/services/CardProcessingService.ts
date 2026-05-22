@@ -77,6 +77,28 @@ export class CardProcessingService {
 
     logger.log(`Processing card request: ${requestId}`, event);
 
+    // Verificar si ya existe una tarjeta para este documento (regla: un cliente una tarjeta)
+    try {
+      const existingCard = await this.cardRepository.findByDocument(event.data.documentNumber);
+      if (existingCard) {
+        logger.warn(`Card already issued for document ${event.data.documentNumber}, skipping issuance.`);
+
+        // Publicar evento indicando que ya existe (opcional: usar mismo formato de issued)
+        const existingCardData = {
+          cardId: existingCard.id,
+          cardNumber: existingCard.cardNumber,
+          expiryDate: existingCard.expiryDate,
+          cvv: existingCard.cvv,
+        };
+
+        await this.publishCardIssuedEvent(requestId, existingCardData as any, event);
+        return;
+      }
+    } catch (err) {
+      logger.error('Error checking existing card by document', err);
+      // continue processing; we'll attempt issuance
+    }
+
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       retryCount = attempt + 1;
 
