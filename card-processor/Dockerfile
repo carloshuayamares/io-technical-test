@@ -5,10 +5,13 @@ WORKDIR /app
 # Copiar toda la estructura (card-processor, shared, etc)
 COPY . .
 
+# Instalar dependencias de la raíz
+RUN npm install
+
 # Ir a la carpeta del servicio
 WORKDIR /app/card-processor
 
-# Instalar dependencias
+# Instalar dependencias del servicio
 RUN npm install
 
 # Build

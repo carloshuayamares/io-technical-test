@@ -1,6 +1,7 @@
 import { getAdmin } from './client';
 import { KAFKA_TOPICS } from './topics';
 import { topicConfig, dlqTopicConfig } from './config';
+import { ITopicMetadata } from 'kafkajs';
 
 export async function initializeTopics(): Promise<void> {
   const admin = await getAdmin();
@@ -26,7 +27,7 @@ export async function initializeTopics(): Promise<void> {
     });
 
     const existingTopicNames = new Set(
-      existingTopics.topics.map(t => t.name)
+      existingTopics.topics.map((t: ITopicMetadata) => t.name)
     );
 
     const topicsToCreateFiltered = topicsToCreate.filter(

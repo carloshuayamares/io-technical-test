@@ -54,7 +54,7 @@ export class CardRepository {
           logger.error('Error fetching card', err);
           reject(err);
         } else {
-          resolve(row || null);
+          resolve((row as CardRecord) || null);
         }
       });
     });
@@ -71,7 +71,7 @@ export class CardRepository {
           logger.error('Error fetching card by document', err);
           reject(err);
         } else {
-          resolve(row || null);
+          resolve((row as CardRecord) || null);
         }
       });
     });

@@ -16,6 +16,8 @@ services:
       - zookeeper
     volumes:
       - kafka-data:/var/lib/kafka/data
+    networks:
+      - app-net
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
       interval: 10s
@@ -31,6 +33,8 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     volumes:
       - zookeeper-data:/var/lib/zookeeper/data
+    networks:
+      - app-net
     healthcheck:
       test: ["CMD-SHELL", "echo ruok | nc -w 2 localhost 2181 | grep imok || exit 1"]
       interval: 10s

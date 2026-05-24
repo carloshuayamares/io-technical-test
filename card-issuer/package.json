@@ -4,7 +4,7 @@
   "description": "Card Issuer Service",
   "main": "dist/app.js",
   "scripts": {
-    "start": "node dist/app.js",
+    "start": "node dist/card-issuer/src/app.js",
     "dev": "ts-node src/app.ts",
     "build": "tsc",
     "test": "jest"

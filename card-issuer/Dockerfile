@@ -1,14 +1,17 @@
-FROM node:18-alpine
+FROM node:18
 
 WORKDIR /app
 
 # Copiar toda la estructura (card-issuer, shared, etc)
 COPY . .
 
+# Instalar dependencias de la raíz
+RUN npm install
+
 # Ir a la carpeta del servicio
 WORKDIR /app/card-issuer
 
-# Instalar dependencias
+# Instalar dependencias del servicio
 RUN npm install
 
 # Build
