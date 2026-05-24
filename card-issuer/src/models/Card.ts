@@ -28,7 +28,7 @@ export interface CardIssueRecord {
 }
 
 export interface CloudEvent {
-  id: string;
+  id: number | string;
   source: string;
   type: string;
   datacontenttype: string;

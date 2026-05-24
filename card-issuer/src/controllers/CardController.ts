@@ -30,16 +30,10 @@ router.post('/issue', async (req: Request, res: Response) => {
       });
     }
 
-    // Emitir error si forceError es true
+    // Si viene forceError, registrarlo y continuar para que el microservicio
+    // `card-processor` pueda manejar la simulación del fallo según corresponda.
     if (validation.data?.forceError) {
-      logger.warn('Force error flag detected');
-      return res.status(500).json({
-        success: false,
-        error: {
-          message: 'Forced error for testing',
-          code: 'FORCED_ERROR',
-        },
-      });
+      logger.warn('Force error flag detected; continuing to process request for testing');
     }
 
     // Procesar solicitud

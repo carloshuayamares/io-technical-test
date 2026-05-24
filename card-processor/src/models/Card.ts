@@ -1,5 +1,5 @@
 export interface CardIssueRequest {
-  id: string;
+  id: number | string;
   source: string;
   type: string;
   datacontenttype: string;
@@ -12,6 +12,7 @@ export interface CardIssueRequest {
     email: string;
     cardType: string;
     currency: string;
+    forceError?: boolean;
   };
 }
 
@@ -33,7 +34,7 @@ export interface CardProcessingResult {
 }
 
 export interface CardIssuedEvent {
-  id: string;
+  id: number | string;
   source: string;
   type: string;
   datacontenttype: string;
@@ -53,7 +54,7 @@ export interface CardIssuedEvent {
 }
 
 export interface DLQMessage {
-  id: string;
+  id: number | string;
   source: string;
   type: string;
   datacontenttype: string;

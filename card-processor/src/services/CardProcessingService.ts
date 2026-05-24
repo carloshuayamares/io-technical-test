@@ -1,9 +1,9 @@
-import { KafkaProducerService, KAFKA_TOPICS } from '../../../shared/kafka';
+import { KafkaProducerService, KAFKA_TOPICS, createCloudEvent } from '../../../shared/kafka';
 import { CardGenerationService } from './CardGenerationService';
 import { CardRepository } from '../repositories/CardRepository';
 import { CardIssueRequest, CardProcessingResult, CardIssuedEvent, DLQMessage, CardRecord } from '../models/Card';
 import { createLogger } from '../../../shared/logger';
-import { v4 as uuidv4 } from 'uuid';
+
 
 const logger = createLogger('CardProcessingService');
 
@@ -103,8 +103,8 @@ export class CardProcessingService {
       retryCount = attempt + 1;
 
       try {
-        // Simular carga externa
-        const success = await this.simulateExternalProcessing(event.data.cardType === 'FORCE_ERROR');
+        // Simular carga externa, usar flag forceError si está presente
+        const success = await this.simulateExternalProcessing(!!event.data.forceError);
 
         if (success) {
           // Generar tarjeta
@@ -169,25 +169,20 @@ export class CardProcessingService {
     originalEvent: CardIssueRequest
   ): Promise<void> {
     try {
-      const event: CardIssuedEvent = {
-        id: uuidv4(),
-        source: requestId,
-        type: KAFKA_TOPICS.CARDS_ISSUED,
-        datacontenttype: 'application/json',
-        time: new Date().toISOString(),
-        data: {
-          cardId: cardData.cardId,
-          requestId,
-          cardNumber: cardData.cardNumber,
-          expiryDate: cardData.expiryDate,
-          cvv: cardData.cvv,
-          documentNumber: originalEvent.data.documentNumber,
-          email: originalEvent.data.email,
-          cardType: originalEvent.data.cardType,
-          currency: originalEvent.data.currency,
-          status: 'ISSUED',
-        },
+      const data = {
+        cardId: cardData.cardId,
+        requestId,
+        cardNumber: cardData.cardNumber,
+        expiryDate: cardData.expiryDate,
+        cvv: cardData.cvv,
+        documentNumber: originalEvent.data.documentNumber,
+        email: originalEvent.data.email,
+        cardType: originalEvent.data.cardType,
+        currency: originalEvent.data.currency,
+        status: 'ISSUED',
       };
+
+      const event = createCloudEvent(KAFKA_TOPICS.CARDS_ISSUED, data, originalEvent.source);
 
       await this.producerService.sendMessage(KAFKA_TOPICS.CARDS_ISSUED, event, requestId);
       logger.log(`Published card issued event: ${requestId}`);
@@ -207,20 +202,15 @@ export class CardProcessingService {
     retryCount: number
   ): Promise<void> {
     try {
-      const dlqMessage: DLQMessage = {
-        id: uuidv4(),
-        source: requestId,
-        type: 'io.card.processing.failed',
-        datacontenttype: 'application/json',
-        time: new Date().toISOString(),
-        data: {
-          originalRequestId: requestId,
-          originalPayload: originalEvent,
-          error,
-          retryCount,
-          reason: `Card processing failed after ${retryCount} retry attempts. Last error: ${error}`,
-        },
+      const dlqData = {
+        originalRequestId: requestId,
+        originalPayload: originalEvent,
+        error,
+        retryCount,
+        reason: `Card processing failed after ${retryCount} retry attempts. Last error: ${error}`,
       };
+
+      const dlqMessage = createCloudEvent('io.card.processing.failed', dlqData, originalEvent.source || requestId);
 
       await this.producerService.sendMessage(KAFKA_TOPICS.CARD_REQUESTED_DLQ, dlqMessage, requestId);
       logger.log(`Published DLQ message for failed processing: ${requestId}`);

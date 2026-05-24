@@ -29,6 +29,8 @@ export class CardService {
       }
 
       const requestId = uuidv4();
+      // Source UUID shared for this execution flow
+      const flowSource = uuidv4();
       const now = new Date().toISOString();
 
       // Crear registro
@@ -50,7 +52,9 @@ export class CardService {
       await this.cardProducer.publishCardRequestedEvent(
         requestId,
         request.customer,
-        request.product
+        request.product,
+        request.forceError,
+        flowSource
       );
 
       return {
