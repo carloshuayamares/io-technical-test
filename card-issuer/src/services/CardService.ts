@@ -33,8 +33,6 @@ export class CardService {
       }
 
       const requestId = uuidv4();
-      // Source UUID shared for this execution flow
-      const flowSource = uuidv4();
       const now = new Date().toISOString();
 
       // Crear registro
@@ -59,7 +57,6 @@ export class CardService {
         request.customer,
         request.product,
         request.forceError,
-        flowSource
       );
 
       return {
