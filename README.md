@@ -58,17 +58,19 @@ docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --list
 - `io.cards.issued.v1`
 - `io.card.requested.v1.dlq`
 
-### Describir un tópico específico
+## Leer Eventos publicados:
+
+### Eventos del Tópico `io.card.requested.v1`:
 ```bash
-docker-compose exec kafka kafka-topics --bootstrap-server localhost:9092 --describe --topic io.cards.issued.v1
+docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic io.card.requested.v1 --from-beginning --timeout-ms 10000
 ```
 
-### Leer eventos publicados en un tópico
+### Eventos del Tópico `io.cards.issued.v1`:
 ```bash
 docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic io.cards.issued.v1 --from-beginning --timeout-ms 10000
 ```
 
-### Leer eventos del DLQ
+### Eventos del Tópico DLQ `io.card.requested.v1.dlq`:
 ```bash
 docker-compose exec kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic io.card.requested.v1.dlq --from-beginning --timeout-ms 10000
 ```
@@ -85,15 +87,6 @@ docker-compose exec card-issuer sh -c "node card-issuer/scripts/query-db.js"
 docker-compose exec card-processor sh -c "node card-processor/scripts/query-db.js"
 ```
 
-### Filtrar por requestId
-```bash
-docker-compose exec card-issuer sh -c "node card-issuer/scripts/query-db.js <requestId>"
-```
-
-```bash
-docker-compose exec card-processor sh -c "node card-processor/scripts/query-db.js <requestId>"
-```
-
 ### Ver el directorio de datos dentro del contenedor
 ```bash
 docker-compose exec card-issuer ls -la /app/data
@@ -106,7 +99,7 @@ docker-compose exec card-processor ls -la /app/data
 ## Consideraciones importantes
 
 - Las bases de datos se mantienen separadas para cada servicio; `card-issuer` y `card-processor` tienen su propio almacenamiento independiente.
-- Las tarjetas creadas exitosamente se guardan como evento en el tópico `io.cards.issued.v1` y pueden ser consumidas por otro servicio (Nuevos Servicios que consuman el tópico en cuestión).
+- Las tarjetas creadas exitosamente se guardan como evento en el tópico `io.cards.issued.v1` y pueden ser consumidas por otro servicio (Nuevos Servicios que consuman los eventos del tópico en cuestión).
 
 ### Flag ForceError y reintentos de solicitudes
 
