@@ -15,15 +15,16 @@ export class CardRepository {
         customer,
         product,
         status,
+        forceError,
         createdAt,
         updatedAt,
       } = record;
 
       const query = `
-        INSERT INTO card_issues (
+        INSERT INTO card_issuer (
           id, requestId, documentType, documentNumber, fullName, age, email,
-          cardType, currency, status, createdAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          cardType, currency, status, forceError, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const customerData = JSON.parse(customer);
@@ -40,6 +41,7 @@ export class CardRepository {
         productData.type,
         productData.currency,
         status,
+        forceError ? 1 : 0,
         createdAt,
         updatedAt,
       ];
@@ -60,7 +62,7 @@ export class CardRepository {
     const db = getDatabase();
 
     return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM card_issues WHERE requestId = ?';
+      const query = 'SELECT * FROM card_issuer WHERE requestId = ?';
 
       db.get(query, [requestId], (err, row) => {
         if (err) {
@@ -77,7 +79,7 @@ export class CardRepository {
     const db = getDatabase();
 
     return new Promise((resolve, reject) => {
-      const query = 'UPDATE card_issues SET status = ?, updatedAt = ? WHERE requestId = ?';
+      const query = 'UPDATE card_issuer SET status = ?, updatedAt = ? WHERE requestId = ?';
       const updatedAt = new Date().toISOString();
 
       db.run(query, [status, updatedAt, requestId], function (err) {
@@ -87,6 +89,23 @@ export class CardRepository {
         } else {
           logger.log(`Card request ${requestId} status updated to ${status}`);
           resolve();
+        }
+      });
+    });
+  }
+
+  async findByDocument(documentNumber: string): Promise<any> {
+    const db = getDatabase();
+
+    return new Promise((resolve, reject) => {
+      const query = 'SELECT * FROM card_issuer WHERE documentNumber = ? LIMIT 1';
+
+      db.get(query, [documentNumber], (err, row) => {
+        if (err) {
+          logger.error('Error fetching card request by document', err);
+          reject(err);
+        } else {
+          resolve(row || null);
         }
       });
     });

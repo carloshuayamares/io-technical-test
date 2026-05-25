@@ -6,15 +6,15 @@ const logger = createLogger('CardValidator');
 
 const cardIssueSchema = Joi.object({
   customer: Joi.object({
-    documentType: Joi.string().required().valid('DNI', 'PASAPORTE', 'RUC'),
-    documentNumber: Joi.string().required().alphanum().min(8).max(12),
+    documentType: Joi.string().required().valid('DNI'),
+    documentNumber: Joi.string().required().alphanum().min(8).max(8),
     fullName: Joi.string().required().min(3).max(100),
     age: Joi.number().required().integer().min(18).max(120),
     email: Joi.string().required().email(),
   }).required(),
   product: Joi.object({
-    type: Joi.string().required().valid('VISA', 'MASTERCARD', 'AMEX'),
-    currency: Joi.string().required().valid('USD', 'PEN', 'EUR'),
+    type: Joi.string().required().valid('VISA'),
+    currency: Joi.string().required().valid('USD', 'PEN'),
   }).required(),
   forceError: Joi.boolean().optional(),
 }).unknown(false);

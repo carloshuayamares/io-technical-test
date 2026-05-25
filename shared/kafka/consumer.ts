@@ -44,8 +44,4 @@ export class KafkaConsumerService {
       eachMessage: messageHandler,
     });
   }
-
-  async seekToBeginning(topics: string[]): Promise<void> {
-    await this.consumer.seekToBeginning(topics);
-  }
 }

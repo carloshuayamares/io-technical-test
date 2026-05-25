@@ -1,5 +1,7 @@
+import { v4 as uuidv4 } from 'uuid';
+
 export interface CardRequestedEvent {
-  id: string;
+  id: number | string;
   userId: string;
   cardType: string;
   requestedAt: string;
@@ -7,7 +9,7 @@ export interface CardRequestedEvent {
 }
 
 export interface CardIssuedEvent {
-  id: string;
+  id: number | string;
   cardNumber: string;
   userId: string;
   issueDate: string;
@@ -22,4 +24,23 @@ export interface DLQMessage {
   error: string;
   retryCount: number;
   timestamp: string;
+}
+
+let eventCounter = 0;
+const defaultRunSource = uuidv4();
+
+export function createCloudEvent(type: string, data: any, source?: string) {
+  eventCounter += 1;
+  return {
+    id: eventCounter,
+    source: source || defaultRunSource,
+    type,
+    datacontenttype: 'application/json',
+    time: new Date().toISOString(),
+    data,
+  };
+}
+
+export function getCurrentRunSource() {
+  return defaultRunSource;
 }

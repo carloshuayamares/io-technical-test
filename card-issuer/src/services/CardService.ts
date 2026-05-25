@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CardIssueRequest, CardIssueRecord } from '../models/Card';
 import { CardRepository } from '../repositories/CardRepository';
+import { HttpError } from '../errors/HttpError';
 import { CardEventProducer } from '../kafka/CardProducer';
 import { createLogger } from '../../../shared/logger';
 
@@ -21,7 +22,19 @@ export class CardService {
 
   async issueCard(request: CardIssueRequest): Promise<{ requestId: string; status: string }> {
     try {
+      // Verificar si el cliente ya tiene una solicitud/tarjeta por documentNumber
+      const existing = await this.cardRepository.findByDocument(request.customer.documentNumber);
+      if (existing) {
+        // Solo permitir nueva solicitud si el intento anterior fue con forceError: true
+        if (!existing.forceError) {
+          throw new HttpError(409, 'Client already has a card request or issued card', 'CONFLICT');
+        }
+        logger.log(`Previous request had forceError: true, allowing new request for document: ${request.customer.documentNumber}`);
+      }
+
       const requestId = uuidv4();
+      // Source UUID shared for this execution flow
+      const flowSource = uuidv4();
       const now = new Date().toISOString();
 
       // Crear registro
@@ -31,6 +44,7 @@ export class CardService {
         customer: JSON.stringify(request.customer),
         product: JSON.stringify(request.product),
         status: 'PENDING',
+        forceError: request.forceError || false,
         createdAt: now,
         updatedAt: now,
       };
@@ -43,7 +57,9 @@ export class CardService {
       await this.cardProducer.publishCardRequestedEvent(
         requestId,
         request.customer,
-        request.product
+        request.product,
+        request.forceError,
+        flowSource
       );
 
       return {

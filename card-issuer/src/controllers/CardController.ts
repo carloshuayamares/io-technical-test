@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { CardService } from '../services/CardService';
 import { validateCardIssueRequest } from '../validators/CardValidator';
 import { createLogger } from '../../../shared/logger';
+import { HttpError } from '../errors/HttpError';
 
 const logger = createLogger('CardController');
 const router = Router();
@@ -29,16 +30,10 @@ router.post('/issue', async (req: Request, res: Response) => {
       });
     }
 
-    // Emitir error si forceError es true
+    // Si viene forceError, registrarlo y continuar para que el microservicio
+    // `card-processor` pueda manejar la simulación del fallo según corresponda.
     if (validation.data?.forceError) {
-      logger.warn('Force error flag detected');
-      return res.status(500).json({
-        success: false,
-        error: {
-          message: 'Forced error for testing',
-          code: 'FORCED_ERROR',
-        },
-      });
+      logger.warn('Force error flag detected; continuing to process request for testing');
     }
 
     // Procesar solicitud
@@ -51,6 +46,16 @@ router.post('/issue', async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Error in card issue endpoint', error);
+    if (error instanceof HttpError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        error: {
+          message: error.message,
+          code: error.code || 'ERROR'
+        }
+      });
+    }
+
     return res.status(500).json({
       success: false,
       error: {

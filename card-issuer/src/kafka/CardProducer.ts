@@ -1,6 +1,5 @@
-import { KafkaProducerService, KAFKA_TOPICS } from '../../../shared/kafka';
+import { KafkaProducerService, KAFKA_TOPICS, createCloudEvent } from '../../../shared/kafka';
 import { createLogger } from '../../../shared/logger';
-import { v4 as uuidv4 } from 'uuid';
 
 const logger = createLogger('CardProducer');
 
@@ -22,25 +21,24 @@ export class CardEventProducer {
   async publishCardRequestedEvent(
     requestId: string,
     customerData: any,
-    productData: any
+    productData: any,
+    forceError?: boolean,
+    source?: string
   ): Promise<void> {
     try {
-      const cloudEvent: any = {
-        id: uuidv4(),
-        source: requestId,
-        type: KAFKA_TOPICS.CARD_REQUESTED,
-        datacontenttype: 'application/json',
-        time: new Date().toISOString(),
-        data: {
-          documentType: customerData.documentType,
-          documentNumber: customerData.documentNumber,
-          fullName: customerData.fullName,
-          age: customerData.age,
-          email: customerData.email,
-          cardType: productData.type,
-          currency: productData.currency,
-        },
+      const data = {
+        documentType: customerData.documentType,
+        documentNumber: customerData.documentNumber,
+        fullName: customerData.fullName,
+        age: customerData.age,
+        email: customerData.email,
+        cardType: productData.type,
+        currency: productData.currency,
+        // Incluir flag de pruebas si viene desde la petición
+        ...(typeof forceError !== 'undefined' ? { forceError } : {}),
       };
+
+      const cloudEvent: any = createCloudEvent(KAFKA_TOPICS.CARD_REQUESTED, data, source || requestId);
 
       await this.producerService.sendMessage(
         KAFKA_TOPICS.CARD_REQUESTED,

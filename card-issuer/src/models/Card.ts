@@ -23,12 +23,13 @@ export interface CardIssueRecord {
   customer: string;
   product: string;
   status: string;
+  forceError: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CloudEvent {
-  id: string;
+  id: number | string;
   source: string;
   type: string;
   datacontenttype: string;

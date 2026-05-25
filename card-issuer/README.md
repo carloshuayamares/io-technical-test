@@ -49,6 +49,7 @@ PORT=3001
 KAFKA_BROKERS=localhost:9092
 KAFKA_CLIENT_ID=card-issuer-service
 DEBUG=false
+DATABASE_PATH=./data/issuer.db
 ```
 
 ## Desarrollo
@@ -71,33 +72,54 @@ npm start
 Solicita la emisión de una tarjeta.
 
 **Request:**
-```json
+```jsonc
 {
   "customer": {
-    "documentType": "DNI",
-    "documentNumber": "11654321",
-    "fullName": "Jose Perez",
-    "age": 25,
-    "email": "joseperez@example.com"
+    "documentType": "DNI",          // Tipo de documento del cliente
+    "documentNumber": "11654321",   // Número de documento del cliente
+    "fullName": "Jose Perez",      // Nombre completo del solicitante
+    "age": 25,                       // Edad del solicitante
+    "email": "joseperez@example.com" // Correo electrónico del solicitante
   },
   "product": {
-    "type": "VISA",
-    "currency": "PEN"
+    "type": "VISA",                // Tipo de tarjeta solicitada
+    "currency": "PEN"              // Moneda del producto
   },
-  "forceError": false
+  "forceError": false                // Flag para simular error y permitir reintento
 }
 ```
 
 **Response (201 Created):**
-```json
+```jsonc
 {
-  "success": true,
+  "success": true,                   // Resultado de la operación
   "data": {
-    "requestId": "550e8400-e29b-41d4-a716-446655440000",
-    "status": "PENDING"
+    "requestId": "550e8400-e29b-41d4-a716-446655440000", // ID único de la solicitud
+    "status": "PENDING"            // Estado inicial de la solicitud
   }
 }
 ```
+
+**Response (409 Conflict):**
+```jsonc
+{
+  "success": false,                  // Resultado de la operación
+  "error": {
+    "message": "Client already has a card request or issued card", // Mensaje de error
+    "code": "CONFLICT"             // Código de error
+  }
+}
+```
+
+## Consideraciones Importantes
+
+### Flag `forceError` y Reintentos
+
+- Cuando una solicitud se realiza con el flag `forceError: true`, la solicitud **se guarda en la base de datos** del card-issuer.
+- Un cliente (identificado por `documentNumber`) **puede realizar múltiples solicitudes** bajo las siguientes condiciones:
+  - **Si el intento anterior fue con `forceError: true`**, se permite una nueva solicitud con el mismo número de documento.
+  - Si la solicitud anterior fue exitosa o aún está en estado PENDING sin el flag `forceError`, no se permite duplicar el documento.
+- Esto permite a los clientes reintentar la solicitud de emisión de tarjeta después de un error simulado (con `forceError: true`) sin necesidad de proporcionar un nuevo documento.
 
 ### GET /cards/:requestId
 
@@ -128,13 +150,13 @@ Obtiene el estado de una solicitud de tarjeta.
 
 El payload es validado con las siguientes reglas:
 
-- **documentType**: Requerido, valores permitidos: `DNI`, `PASAPORTE`, `RUC`
+- **documentType**: Requerido, valores permitidos: `DNI`
 - **documentNumber**: Requerido, alfanumérico, 8-12 caracteres
 - **fullName**: Requerido, 3-100 caracteres
 - **age**: Requerido, entero, 18-120
 - **email**: Requerido, formato de email válido
-- **cardType**: Requerido, valores permitidos: `VISA`, `MASTERCARD`, `AMEX`
-- **currency**: Requerido, valores permitidos: `USD`, `PEN`, `EUR`
+- **cardType**: Requerido, valores permitidos: `VISA`
+- **currency**: Requerido, valores permitidos: `USD`, `PEN`
 
 ## Flujo de Procesamiento
 
@@ -146,26 +168,53 @@ El payload es validado con las siguientes reglas:
 6. Respuesta al cliente con `requestId` y `status`
 7. El card-processor consume el evento y procesa la solicitud
 
+## Estructura de datos guardada en la base de datos local
+
+El servicio `card-issuer` almacena cada solicitud de emisión en SQLite con la siguiente estructura:
+
+```jsonc
+{
+  "id": "uuid-registro",                           // UUID interno de la fila en SQLite
+  "requestId": "550e8400-e29b-41d4-a716-446655440000", // UUID de la solicitud
+  "documentType": "DNI",              // Tipo de documento del cliente
+  "documentNumber": "11654321",       // Número de documento del cliente
+  "fullName": "Jose Perez",          // Nombre completo
+  "age": 25,                            // Edad del cliente
+  "email": "joseperez@example.com",   // Email del cliente
+  "cardType": "VISA",                 // Tipo de tarjeta solicitada
+  "currency": "PEN",                  // Moneda solicitada
+  "status": "PENDING",               // Estado actual de la solicitud
+  "forceError": false,                  // Flag usado para reintentos forzados
+  "createdAt": "2026-05-22T10:30:00.000Z", // Fecha de creación
+  "updatedAt": "2026-05-22T10:30:00.000Z"  // Fecha de última actualización
+}
+```
+
 ## CloudEvent Publicado
 
-```json
+Este JSON es el evento Kafka producido por `card-issuer` al crear la solicitud:
+
+#### Evento Kafka publicado en `io.card.requested.v1`
+```jsonc
 {
-  "id": "uuid-evento",
-  "source": "requestId",
-  "type": "io.card.requested.v1",
-  "datacontenttype": "application/json",
-  "time": "2026-05-22T10:30:00.000Z",
+  "id": 1,                            // Identificador incremental del evento (eventCounter), no UUID
+  "source": "requestId",            // Origen del evento, vinculado al requestId
+  "type": "io.card.requested.v1",   // Tipo de evento Kafka (topic)
+  "datacontenttype": "application/json", // Tipo de contenido del evento
+  "time": "2026-05-22T10:30:00.000Z", // Marca de tiempo del evento
   "data": {
-    "documentType": "DNI",
-    "documentNumber": "11654321",
-    "fullName": "Jose Perez",
-    "age": 25,
-    "email": "joseperez@example.com",
-    "cardType": "VISA",
-    "currency": "PEN"
+    "documentType": "DNI",          // Tipo de documento del cliente
+    "documentNumber": "11654321",   // Número de documento del cliente
+    "fullName": "Jose Perez",      // Nombre completo del cliente
+    "age": 25,                        // Edad del cliente
+    "email": "joseperez@example.com", // Correo electrónico del cliente
+    "cardType": "VISA",             // Tipo de tarjeta solicitada
+    "currency": "PEN"               // Moneda solicitada
   }
 }
 ```
+
+> Nota: el campo `id` en los eventos Kafka se genera internamente con un contador incremental (`eventCounter`) en lugar de un UUID.
 
 ## Health Check
 
