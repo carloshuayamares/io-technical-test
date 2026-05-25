@@ -72,42 +72,42 @@ npm start
 Solicita la emisión de una tarjeta.
 
 **Request:**
-```json
+```jsonc
 {
   "customer": {
-    "documentType": "DNI",
-    "documentNumber": "11654321",
-    "fullName": "Jose Perez",
-    "age": 25,
-    "email": "joseperez@example.com"
+    "documentType": "DNI",          // Tipo de documento del cliente
+    "documentNumber": "11654321",   // Número de documento del cliente
+    "fullName": "Jose Perez",      // Nombre completo del solicitante
+    "age": 25,                       // Edad del solicitante
+    "email": "joseperez@example.com" // Correo electrónico del solicitante
   },
   "product": {
-    "type": "VISA",
-    "currency": "PEN"
+    "type": "VISA",                // Tipo de tarjeta solicitada
+    "currency": "PEN"              // Moneda del producto
   },
-  "forceError": false
+  "forceError": false                // Flag para simular error y permitir reintento
 }
 ```
 
 **Response (201 Created):**
-```json
+```jsonc
 {
-  "success": true,
+  "success": true,                   // Resultado de la operación
   "data": {
-    "requestId": "550e8400-e29b-41d4-a716-446655440000",
-    "status": "PENDING"
+    "requestId": "550e8400-e29b-41d4-a716-446655440000", // ID único de la solicitud
+    "status": "PENDING"            // Estado inicial de la solicitud
   }
 }
 ```
 
 **Response (409 Conflict):**
-```json
+```jsonc
 {
-	"success": false,
-	"error": {
-		"message": "Client already has a card request or issued card",
-		"code": "CONFLICT"
-	}
+  "success": false,                  // Resultado de la operación
+  "error": {
+    "message": "Client already has a card request or issued card", // Mensaje de error
+    "code": "CONFLICT"             // Código de error
+  }
 }
 ```
 
@@ -168,23 +168,47 @@ El payload es validado con las siguientes reglas:
 6. Respuesta al cliente con `requestId` y `status`
 7. El card-processor consume el evento y procesa la solicitud
 
+## Estructura de datos guardada en la base de datos local
+
+El servicio `card-issuer` almacena cada solicitud de emisión en SQLite con la siguiente estructura:
+
+```jsonc
+{
+  "id": "1",                           // ID interno de la fila
+  "requestId": "550e8400-e29b-41d4-a716-446655440000", // UUID de la solicitud
+  "documentType": "DNI",              // Tipo de documento del cliente
+  "documentNumber": "11654321",       // Número de documento del cliente
+  "fullName": "Jose Perez",          // Nombre completo
+  "age": 25,                            // Edad del cliente
+  "email": "joseperez@example.com",   // Email del cliente
+  "cardType": "VISA",                 // Tipo de tarjeta solicitada
+  "currency": "PEN",                  // Moneda solicitada
+  "status": "PENDING",               // Estado actual de la solicitud
+  "forceError": false,                  // Flag usado para reintentos forzados
+  "createdAt": "2026-05-22T10:30:00.000Z", // Fecha de creación
+  "updatedAt": "2026-05-22T10:30:00.000Z"  // Fecha de última actualización
+}
+```
+
 ## CloudEvent Publicado
 
-```json
+Este JSON es el evento Kafka producido por `card-issuer` al crear la solicitud:
+
+```jsonc
 {
-  "id": "uuid-evento",
-  "source": "requestId",
-  "type": "io.card.requested.v1",
-  "datacontenttype": "application/json",
-  "time": "2026-05-22T10:30:00.000Z",
+  "id": "uuid-evento",                // UUID único del evento
+  "source": "requestId",              // Origen del evento, vinculado al requestId
+  "type": "io.card.requested.v1",     // Tipo de evento Kafka (topic)
+  "datacontenttype": "application/json", // Tipo de contenido del evento
+  "time": "2026-05-22T10:30:00.000Z", // Marca de tiempo del evento
   "data": {
-    "documentType": "DNI",
-    "documentNumber": "11654321",
-    "fullName": "Jose Perez",
-    "age": 25,
-    "email": "joseperez@example.com",
-    "cardType": "VISA",
-    "currency": "PEN"
+    "documentType": "DNI",            // Tipo de documento del cliente
+    "documentNumber": "11654321",     // Número de documento del cliente
+    "fullName": "Jose Perez",        // Nombre completo del cliente
+    "age": 25,                          // Edad del cliente
+    "email": "joseperez@example.com", // Correo electrónico del cliente
+    "cardType": "VISA",               // Tipo de tarjeta solicitada
+    "currency": "PEN"                 // Moneda solicitada
   }
 }
 ```

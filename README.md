@@ -105,6 +105,9 @@ docker-compose exec card-processor ls -la /app/data
 
 ## Consideraciones importantes
 
+- Las bases de datos se mantienen separadas para cada servicio; `card-issuer` y `card-processor` tienen su propio almacenamiento independiente.
+- Las tarjetas creadas exitosamente se guardan como evento en el tópico `io.cards.issued.v1` y pueden ser consumidas por otro servicio (Nuevos Servicios que consuman el tópico en cuestión).
+
 ### Flag ForceError y reintentos de solicitudes
 
 - Las solicitudes enviadas con `forceError: true` se **persisten en la base de datos** del servicio card-issuer.
@@ -112,3 +115,18 @@ docker-compose exec card-processor ls -la /app/data
   - **Si el intento anterior se realizó con `forceError: true`**, se permite una nueva solicitud con el mismo número de documento.
   - Si la solicitud anterior fue exitosa o todavía está en estado PENDING sin la bandera `forceError`, las presentaciones de documentos duplicados son **rechazadas**.
 - Este mecanismo permite a los clientes reintentar la emisión de la tarjeta después de un error simulado (usando `forceError: true`) sin necesitar proporcionar un documento diferente.
+- Para futuros casos que no sean errores forzados, el mismo número de documento no debería poder generarse de nuevo cuando ya existe una solicitud válida o pendiente.
+
+### Buenas prácticas aplicadas
+
+- Uso de eventos para desacoplar los componentes y permitir que servicios independientes consuman el mismo flujo de datos.
+- Garantizar la confiabilidad del código mediante persistencia de eventos y manejo consistente de estados.
+- Monitoreo claro obligatorio a través de la observabilidad de eventos y registros, para detectar y depurar fallos rápidamente.
+- Implementación de prácticas de desarrollo seguro: validación de entrada, control de errores y separación de responsabilidades.
+- Arquitectura modular y componentes desacoplados para que `card-issuer` y `card-processor` puedan evolucionar de forma independiente.
+
+## Mejoras futuras
+
+- El servicio `card-processor` podría publicar un evento de tarjeta generada al completar el procesamiento exitoso.
+- `card-issuer` consumiría ese evento para actualizar el estado de la tarjeta en su propia base de datos.
+- Esto reforzaría la sincronización entre servicios y permitiría un flujo de estado más robusto entre emisión y procesamiento.
