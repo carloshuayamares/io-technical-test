@@ -174,7 +174,7 @@ El servicio `card-issuer` almacena cada solicitud de emisión en SQLite con la s
 
 ```jsonc
 {
-  "id": "1",                           // ID interno de la fila
+  "id": "uuid-registro",                           // UUID interno de la fila en SQLite
   "requestId": "550e8400-e29b-41d4-a716-446655440000", // UUID de la solicitud
   "documentType": "DNI",              // Tipo de documento del cliente
   "documentNumber": "11654321",       // Número de documento del cliente
@@ -194,24 +194,27 @@ El servicio `card-issuer` almacena cada solicitud de emisión en SQLite con la s
 
 Este JSON es el evento Kafka producido por `card-issuer` al crear la solicitud:
 
+#### Evento Kafka publicado en `io.card.requested.v1`
 ```jsonc
 {
-  "id": "uuid-evento",                // UUID único del evento
-  "source": "requestId",              // Origen del evento, vinculado al requestId
-  "type": "io.card.requested.v1",     // Tipo de evento Kafka (topic)
+  "id": 1,                            // Identificador incremental del evento (eventCounter), no UUID
+  "source": "requestId",            // Origen del evento, vinculado al requestId
+  "type": "io.card.requested.v1",   // Tipo de evento Kafka (topic)
   "datacontenttype": "application/json", // Tipo de contenido del evento
   "time": "2026-05-22T10:30:00.000Z", // Marca de tiempo del evento
   "data": {
-    "documentType": "DNI",            // Tipo de documento del cliente
-    "documentNumber": "11654321",     // Número de documento del cliente
-    "fullName": "Jose Perez",        // Nombre completo del cliente
-    "age": 25,                          // Edad del cliente
+    "documentType": "DNI",          // Tipo de documento del cliente
+    "documentNumber": "11654321",   // Número de documento del cliente
+    "fullName": "Jose Perez",      // Nombre completo del cliente
+    "age": 25,                        // Edad del cliente
     "email": "joseperez@example.com", // Correo electrónico del cliente
-    "cardType": "VISA",               // Tipo de tarjeta solicitada
-    "currency": "PEN"                 // Moneda solicitada
+    "cardType": "VISA",             // Tipo de tarjeta solicitada
+    "currency": "PEN"               // Moneda solicitada
   }
 }
 ```
+
+> Nota: el campo `id` en los eventos Kafka se genera internamente con un contador incremental (`eventCounter`) en lugar de un UUID.
 
 ## Health Check
 

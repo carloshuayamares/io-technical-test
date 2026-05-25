@@ -65,23 +65,29 @@ npm start
 
 ## Flujo de Procesamiento
 
-### 1. Escucha Evento
-```json
+### 1. Escucha Evento Kafka entrante
+```jsonc
 {
-  "id": "uuid-evento",
-  "source": "uuid-flujo",
-  "type": "io.card.requested.v1",
+  "id": 1,                            // Identificador incremental del evento (eventCounter), no UUID
+  "source": "uuid-flujo",             // Origen del evento, heredado por el servicio al republicar eventos
+  "type": "io.card.requested.v1",     // Tipo de evento y tópico Kafka asociado
+  "datacontenttype": "application/json", // Tipo de contenido del evento
+  "time": "2026-05-22T10:30:00.000Z", // Marca de tiempo del evento
   "data": {
-    "documentType": "DNI",
-    "documentNumber": "11654321",
-    "fullName": "Jose Perez",
-    "age": 25,
-    "email": "joseperez@example.com",
-    "cardType": "VISA",
-    "currency": "PEN"
+    "documentType": "DNI",            // Tipo de documento del cliente
+    "documentNumber": "11654321",     // Número de documento del cliente
+    "fullName": "Jose Perez",         // Nombre completo del solicitante
+    "age": 25,                          // Edad del solicitante
+    "email": "joseperez@example.com", // Correo electrónico del cliente
+    "cardType": "VISA",               // Tipo de tarjeta solicitada
+    "currency": "PEN",                // Moneda solicitada
+    "forceError": false                 // Flag opcional para simular fallo
   }
 }
 ```
+
+> Nota: en `card-processor` se usa `documentNumber` como `requestId` interno para seguimiento del procesamiento.
+> El campo `id` del evento Kafka es un contador incremental interno (`eventCounter`), no un UUID.
 
 ### 2. Simula Carga Extena
 - Latencia: 200-500ms (aleatorio)
@@ -90,45 +96,72 @@ npm start
 
 ### 3. En Caso de Éxito
 - ✅ Genera tarjeta (número válido, vencimiento, CVV)
-- ✅ Almacena en DB
-- ✅ Publica `io.cards.issued.v1`
+- ✅ Almacena en DB local
+- ✅ Publica evento Kafka `io.cards.issued.v1`
 
-```json
+#### Evento Kafka publicado en `io.cards.issued.v1`
+```jsonc
 {
-  "id": "uuid-evento",
-  "source": "requestId",
-  "type": "io.cards.issued.v1",
+  "id": 2,                          // Identificador incremental del evento (eventCounter)
+  "source": "uuid-flujo",        // Source heredado del evento de entrada
+  "type": "io.cards.issued.v1",  // Tipo/tópico del evento de tarjeta emitida
+  "datacontenttype": "application/json", // Tipo de contenido del evento
+  "time": "2026-05-22T10:30:00.000Z", // Marca de tiempo del evento
   "data": {
-    "cardId": "uuid-tarjeta",
-    "requestId": "11654321",
-    "cardNumber": "4532015112830366",
-    "expiryDate": "12/27",
-    "cvv": "123",
-    "documentNumber": "11654321",
-    "email": "joseperez@example.com",
-    "cardType": "VISA",
-    "currency": "PEN",
-    "status": "ISSUED"
+    "cardId": "uuid-tarjeta",      // UUID interno de la tarjeta generada
+    "requestId": "11654321",       // RequestId interno derivado de documentNumber
+    "cardNumber": "4532015112830366", // Número de tarjeta generado
+    "expiryDate": "12/27",         // Fecha de vencimiento de la tarjeta
+    "cvv": "123",                  // Código CVV generado
+    "documentNumber": "11654321",   // Documento del cliente asociado
+    "email": "joseperez@example.com", // Correo electrónico del cliente
+    "cardType": "VISA",             // Tipo de tarjeta emitida
+    "currency": "PEN",              // Moneda de la tarjeta
+    "status": "ISSUED"              // Estado final de la tarjeta
   }
+}
+```
+
+#### Estructura de datos guardada en la base de datos local
+```jsonc
+{
+  "id": "uuid-registro",             // UUID interno de la fila en SQLite
+  "cardId": "uuid-tarjeta",          // UUID interno de la tarjeta
+  "requestId": "11654321",           // RequestId original de la solicitud
+  "documentNumber": "11654321",      // Documento del cliente asociado
+  "cardNumber": "4532015112830366", // Número de tarjeta generado
+  "expiryDate": "12/27",             // Fecha de vencimiento de la tarjeta
+  "cvv": "123",                      // Código CVV generado
+  "cardType": "VISA",                // Tipo de tarjeta emitida
+  "currency": "PEN",                 // Moneda de la tarjeta
+  "status": "ISSUED",                // Estado del registro en DB
+  "createdAt": "2026-05-22T10:30:00.000Z", // Fecha de creación del registro
+  "updatedAt": "2026-05-22T10:30:00.000Z"  // Fecha de última actualización
 }
 ```
 
 ### 4. En Caso de Fallo
 - 🔄 Reintenta con backoff: 1s → 2s → 4s
 - Máx 3 intentos
-- Si falla definitivamente → publica DLQ
+- Si falla definitivamente → publica evento DLQ
 
-```json
+#### Evento Kafka publicado en `io.card.requested.v1.dlq`
+
+```jsonc
 {
-  "id": "uuid-evento",
-  "source": "requestId",
-  "type": "io.card.requested.v1.dlq",
+  "id": 3,                       // Identificador incremental del evento DLQ (eventCounter)
+  "source": "uuid-flujo",                    // Source heredado del evento original o requestId si no existe
+  "type": "io.card.requested.v1.dlq",        // Evento DLQ publicado en Kafka
+  "datacontenttype": "application/json",     // Tipo de contenido del evento
+  "time": "2026-05-22T10:30:00.000Z",       // Marca de tiempo del evento DLQ
   "data": {
-    "originalRequestId": "11654321",
-    "originalPayload": { ... },
-    "error": "External processing failed",
-    "retryCount": 3,
-    "reason": "Card processing failed after 3 retry attempts. Last error: External processing failed"
+    "originalRequestId": "11654321",         // RequestId interno derivado de documentNumber
+    "originalPayload": {                       // Evento original completo que falló
+      ...
+    },
+    "error": "External processing failed",   // Mensaje de error final
+    "retryCount": 3,                          // Cantidad de reintentos realizados
+    "reason": "Card processing failed after 3 retry attempts. Last error: External processing failed" // Descripción detallada del motivo
   }
 }
 ```
