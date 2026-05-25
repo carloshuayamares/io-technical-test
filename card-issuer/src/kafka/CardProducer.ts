@@ -23,7 +23,6 @@ export class CardEventProducer {
     customerData: any,
     productData: any,
     forceError?: boolean,
-    source?: string
   ): Promise<void> {
     try {
       const data = {
@@ -38,7 +37,7 @@ export class CardEventProducer {
         ...(typeof forceError !== 'undefined' ? { forceError } : {}),
       };
 
-      const cloudEvent: any = createCloudEvent(KAFKA_TOPICS.CARD_REQUESTED, data, source || requestId);
+      const cloudEvent: any = createCloudEvent(KAFKA_TOPICS.CARD_REQUESTED, data, requestId);
 
       await this.producerService.sendMessage(
         KAFKA_TOPICS.CARD_REQUESTED,
