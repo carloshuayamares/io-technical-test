@@ -9,7 +9,7 @@ Consumer que escucha eventos de `io.card.requested.v1` desde Kafka, procesa soli
 - ✅ Consume eventos `io.card.requested.v1` con patrón CloudEvents
 - ✅ Simula carga externa (200-500ms) con algoritmo aleatorio de éxito/fallo
 - ✅ Reintentos con backoff exponencial: 1s, 2s, 4s (máx 3 intentos)
-- ✅ Generación de tarjetas válidas (números Visa/Mastercard/AMEX con Luhn)
+- ✅ Generación de tarjetas válidas (números Visa con Luhn)
 - ✅ Almacenamiento en DB local (SQLite)
 - ✅ Publica `io.cards.issued.v1` en caso de éxito
 - ✅ Publica `io.card.requested.v1.dlq` en caso de fallo permanente
@@ -85,8 +85,8 @@ npm start
 
 ### 2. Simula Carga Extena
 - Latencia: 200-500ms (aleatorio)
-- Probabilidad de éxito: 70%
-- Probabilidad de fallo: 30%
+- Probabilidad de éxito: 50%
+- Probabilidad de fallo: 50%
 
 ### 3. En Caso de Éxito
 - ✅ Genera tarjeta (número válido, vencimiento, CVV)
@@ -122,7 +122,7 @@ npm start
 {
   "id": "uuid-evento",
   "source": "requestId",
-  "type": "io.card.processing.failed",
+  "type": "io.card.requested.v1.dlq",
   "data": {
     "originalRequestId": "11654321",
     "originalPayload": { ... },
@@ -145,59 +145,17 @@ Intento 3 → Fallo → Publica a DLQ
 
 ### Validación de Número de Tarjeta
 - **VISA**: Comienza con 4, 16 dígitos
-- **MASTERCARD**: Comienza con 51-55, 16 dígitos
-- **AMEX**: Comienza con 34/37, 15 dígitos
 - Todos usan **algoritmo de Luhn** para verificación
 
 ### Datos de la Tarjeta
 - **Número**: Válido según tipo y con check digit
 - **Vencimiento**: 2-5 años en el futuro (MM/YY)
-- **CVV**: 3 dígitos (4 para AMEX)
+- **CVV**: 3 dígitos
 
 ## Ejemplos de Prueba
 
 ### Con forceError=true (fuerza 3 fallos)
-```json
-{
-  "customer": { ... },
-  "product": {
-    "type": "FORCE_ERROR",
-    "currency": "PEN"
-  }
-}
-```
-
 Resultado: El evento va a DLQ sin haber intentado guardar en DB.
-
-### Prueba Manual con Docker
-
-```bash
-# 1. Levantar stack
-docker-compose up --build -d
-
-# 2. Ver logs del card-processor
-docker-compose logs -f card-processor
-
-# 3. Enviar solicitud a card-issuer (POST /cards/issue)
-curl -X POST http://localhost:3001/cards/issue \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customer": {
-      "documentType": "DNI",
-      "documentNumber": "12345678",
-      "fullName": "Test User",
-      "age": 25,
-      "email": "test@example.com"
-    },
-    "product": {
-      "type": "VISA",
-      "currency": "PEN"
-    }
-  }'
-
-# 4. Ver datos en BD
-node card-processor/scripts/query-db.js
-```
 
 ## Dependencias Principales
 

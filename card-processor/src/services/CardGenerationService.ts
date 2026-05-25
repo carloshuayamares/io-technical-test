@@ -10,22 +10,8 @@ export class CardGenerationService {
    */
   private generateCardNumber(cardType: string): string {
     // Prefijo según tipo de tarjeta
-    let prefix: string;
-    let length: number;
-
-    if (cardType === 'VISA') {
-      prefix = '4';
-      length = 16;
-    } else if (cardType === 'MASTERCARD') {
-      prefix = '51'; // 51-55 rango Mastercard
-      length = 16;
-    } else if (cardType === 'AMEX') {
-      prefix = '37';
-      length = 15;
-    } else {
-      prefix = '4';
-      length = 16;
-    }
+    let prefix: string = '4'; // Visa por defecto
+    let length: number = 16; // Longitud por defecto
 
     // Generar dígitos aleatorios hasta el largo deseado
     let cardNumber = prefix;

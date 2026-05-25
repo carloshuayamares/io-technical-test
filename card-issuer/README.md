@@ -49,6 +49,7 @@ PORT=3001
 KAFKA_BROKERS=localhost:9092
 KAFKA_CLIENT_ID=card-issuer-service
 DEBUG=false
+DATABASE_PATH=./data/issuer.db
 ```
 
 ## Desarrollo
@@ -99,6 +100,17 @@ Solicita la emisión de una tarjeta.
 }
 ```
 
+**Response (409 Conflict):**
+```json
+{
+	"success": false,
+	"error": {
+		"message": "Client already has a card request or issued card",
+		"code": "CONFLICT"
+	}
+}
+```
+
 ## Consideraciones Importantes
 
 ### Flag `forceError` y Reintentos
@@ -138,13 +150,13 @@ Obtiene el estado de una solicitud de tarjeta.
 
 El payload es validado con las siguientes reglas:
 
-- **documentType**: Requerido, valores permitidos: `DNI`, `PASAPORTE`, `RUC`
+- **documentType**: Requerido, valores permitidos: `DNI`
 - **documentNumber**: Requerido, alfanumérico, 8-12 caracteres
 - **fullName**: Requerido, 3-100 caracteres
 - **age**: Requerido, entero, 18-120
 - **email**: Requerido, formato de email válido
-- **cardType**: Requerido, valores permitidos: `VISA`, `MASTERCARD`, `AMEX`
-- **currency**: Requerido, valores permitidos: `USD`, `PEN`, `EUR`
+- **cardType**: Requerido, valores permitidos: `VISA`
+- **currency**: Requerido, valores permitidos: `USD`, `PEN`
 
 ## Flujo de Procesamiento
 

@@ -42,8 +42,8 @@ export class CardProcessingService {
       return false;
     }
 
-    // 70% de éxito, 30% de fallo
-    const success = Math.random() < 0.7;
+    // 50% de éxito, 50% de fallo
+    const success = Math.random() < 0.5;
     logger.log(`External processing simulation: ${success ? 'SUCCESS' : 'FAILED'}`);
 
     return success;
@@ -126,6 +126,7 @@ export class CardProcessingService {
             cardType: event.data.cardType,
             currency: event.data.currency,
             status: 'ISSUED',
+            retryCount,
             createdAt: now,
             updatedAt: now,
           };

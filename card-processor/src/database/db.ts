@@ -45,6 +45,7 @@ function createTables(): Promise<void> {
           cardType TEXT NOT NULL,
           currency TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'ISSUED',
+          retryCount INTEGER NOT NULL DEFAULT 0,
           createdAt TEXT NOT NULL,
           updatedAt TEXT NOT NULL
         )`,

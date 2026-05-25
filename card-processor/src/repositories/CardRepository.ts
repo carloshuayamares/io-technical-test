@@ -12,8 +12,8 @@ export class CardRepository {
       const query = `
         INSERT INTO card_processor (
           id, requestId, cardNumber, expiryDate, cvv,
-          documentNumber, email, cardType, currency, status, createdAt, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          documentNumber, email, cardType, currency, status, retryCount, createdAt, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const params = [
@@ -27,6 +27,7 @@ export class CardRepository {
         record.cardType,
         record.currency,
         record.status,
+        record.retryCount,
         record.createdAt,
         record.updatedAt,
       ];

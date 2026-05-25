@@ -79,6 +79,7 @@ export interface CardRecord {
   cardType: string;
   currency: string;
   status: string;
+  retryCount: number;
   createdAt: string;
   updatedAt: string;
 }
