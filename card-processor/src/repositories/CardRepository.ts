@@ -10,7 +10,7 @@ export class CardRepository {
 
     return new Promise((resolve, reject) => {
       const query = `
-        INSERT INTO issued_cards (
+        INSERT INTO card_processor (
           id, requestId, cardNumber, expiryDate, cvv,
           documentNumber, email, cardType, currency, status, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -47,7 +47,7 @@ export class CardRepository {
     const db = getDatabase();
 
     return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM issued_cards WHERE requestId = ?';
+      const query = 'SELECT * FROM card_processor WHERE requestId = ?';
 
       db.get(query, [requestId], (err, row) => {
         if (err) {
@@ -64,7 +64,7 @@ export class CardRepository {
     const db = getDatabase();
 
     return new Promise((resolve, reject) => {
-      const query = 'SELECT * FROM issued_cards WHERE documentNumber = ? LIMIT 1';
+      const query = 'SELECT * FROM card_processor WHERE documentNumber = ? LIMIT 1';
 
       db.get(query, [documentNumber], (err, row) => {
         if (err) {

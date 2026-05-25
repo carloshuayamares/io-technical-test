@@ -45,3 +45,13 @@ The system consists of two main services:
 2. **Card Processor**: Consumes card events and processes them
 
 Communication between services is facilitated through Kafka topics.
+
+## Important Considerations
+
+### ForceError Flag and Request Retries
+
+- Requests submitted with `forceError: true` are **persisted in the database** in the card-issuer service.
+- A client (identified by `documentNumber`) can submit multiple card issuance requests under the following conditions:
+  - **If the previous attempt was made with `forceError: true`**, a new request with the same document number is **allowed**.
+  - If the previous request was successful or is still in PENDING status without the `forceError` flag, duplicate document submissions are **rejected**.
+- This mechanism enables clients to retry card issuance after a simulated error (using `forceError: true`) without needing to provide a different document.

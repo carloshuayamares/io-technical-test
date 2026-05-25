@@ -1,8 +1,8 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-// DB path relative to this script: card-issuer/scripts -> ../../data/issuer.db
-const dbPath = path.join(__dirname, '..', '..', 'data', 'issuer.db');
+// DB path relative to this script: card-processor/scripts -> ../../data/processor.db
+const dbPath = path.join(__dirname, '..', '..', 'data', 'processor.db');
 
 const args = process.argv.slice(2);
 const requestId = args[0];
@@ -15,8 +15,8 @@ const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
 });
 
 const query = requestId
-  ? 'SELECT * FROM card_issuer WHERE requestId = ?'
-  : 'SELECT * FROM card_issuer';
+  ? 'SELECT * FROM card_processor WHERE requestId = ?'
+  : 'SELECT * FROM card_processor';
 
 const params = requestId ? [requestId] : [];
 

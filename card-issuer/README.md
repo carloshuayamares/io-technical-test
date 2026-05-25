@@ -99,6 +99,16 @@ Solicita la emisión de una tarjeta.
 }
 ```
 
+## Consideraciones Importantes
+
+### Flag `forceError` y Reintentos
+
+- Cuando una solicitud se realiza con el flag `forceError: true`, la solicitud **se guarda en la base de datos** del card-issuer.
+- Un cliente (identificado por `documentNumber`) **puede realizar múltiples solicitudes** bajo las siguientes condiciones:
+  - **Si el intento anterior fue con `forceError: true`**, se permite una nueva solicitud con el mismo número de documento.
+  - Si la solicitud anterior fue exitosa o aún está en estado PENDING sin el flag `forceError`, no se permite duplicar el documento.
+- Esto permite a los clientes reintentar la solicitud de emisión de tarjeta después de un error simulado (con `forceError: true`) sin necesidad de proporcionar un nuevo documento.
+
 ### GET /cards/:requestId
 
 Obtiene el estado de una solicitud de tarjeta.

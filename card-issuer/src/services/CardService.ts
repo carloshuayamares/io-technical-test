@@ -25,7 +25,11 @@ export class CardService {
       // Verificar si el cliente ya tiene una solicitud/tarjeta por documentNumber
       const existing = await this.cardRepository.findByDocument(request.customer.documentNumber);
       if (existing) {
-        throw new HttpError(409, 'Client already has a card request or issued card', 'CONFLICT');
+        // Solo permitir nueva solicitud si el intento anterior fue con forceError: true
+        if (!existing.forceError) {
+          throw new HttpError(409, 'Client already has a card request or issued card', 'CONFLICT');
+        }
+        logger.log(`Previous request had forceError: true, allowing new request for document: ${request.customer.documentNumber}`);
       }
 
       const requestId = uuidv4();
@@ -40,6 +44,7 @@ export class CardService {
         customer: JSON.stringify(request.customer),
         product: JSON.stringify(request.product),
         status: 'PENDING',
+        forceError: request.forceError || false,
         createdAt: now,
         updatedAt: now,
       };

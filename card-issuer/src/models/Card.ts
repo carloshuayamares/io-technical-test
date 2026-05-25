@@ -23,6 +23,7 @@ export interface CardIssueRecord {
   customer: string;
   product: string;
   status: string;
+  forceError: boolean;
   createdAt: string;
   updatedAt: string;
 }

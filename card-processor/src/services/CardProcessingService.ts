@@ -130,6 +130,7 @@ export class CardProcessingService {
             updatedAt: now,
           };
 
+          // Guardar en base de datos
           await this.cardRepository.saveIssuedCard(cardRecord);
 
           // Publicar evento de éxito
@@ -210,9 +211,14 @@ export class CardProcessingService {
         reason: `Card processing failed after ${retryCount} retry attempts. Last error: ${error}`,
       };
 
-      const dlqMessage = createCloudEvent('io.card.processing.failed', dlqData, originalEvent.source || requestId);
+      const dlqMessage = createCloudEvent(KAFKA_TOPICS.CARD_REQUESTED_DLQ, dlqData, originalEvent.source || requestId);
 
-      await this.producerService.sendMessage(KAFKA_TOPICS.CARD_REQUESTED_DLQ, dlqMessage, requestId);
+      await this.producerService.sendMessage(
+        KAFKA_TOPICS.CARD_REQUESTED_DLQ,
+        dlqMessage,
+        requestId
+      );
+
       logger.log(`Published DLQ message for failed processing: ${requestId}`);
     } catch (error) {
       logger.error('Error publishing to DLQ', error);

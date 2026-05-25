@@ -35,7 +35,7 @@ function createTables(): Promise<void> {
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       db.run(
-        `CREATE TABLE IF NOT EXISTS card_issues (
+        `CREATE TABLE IF NOT EXISTS card_issuer (
           id TEXT PRIMARY KEY,
           requestId TEXT UNIQUE NOT NULL,
           documentType TEXT NOT NULL,
@@ -46,15 +46,16 @@ function createTables(): Promise<void> {
           cardType TEXT NOT NULL,
           currency TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'PENDING',
+          forceError INTEGER NOT NULL DEFAULT 0,
           createdAt TEXT NOT NULL,
           updatedAt TEXT NOT NULL
         )`,
         (err) => {
           if (err) {
-            logger.error('Error creating card_issues table', err);
+            logger.error('Error creating card_issuer table', err);
             reject(err);
           } else {
-            logger.log('card_issues table created/verified');
+            logger.log('card_issuer table created/verified');
             resolve();
           }
         }
